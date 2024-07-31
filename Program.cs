@@ -1,9 +1,15 @@
+using TestProj.Data;
 using TestProj.Services;
 
 namespace TestProj
 {
     public class Program
     {
+        internal static IConfiguration config = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json")
+            .Build();
+
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +17,7 @@ namespace TestProj
             // Add services to the container.
             builder.Services.AddControllersWithViews();
             builder.Services.AddSingleton<ICoinsData, CoinsData>();
+            builder.Services.AddSqlServer<ApplicationContext>(config.GetConnectionString("DefaultConnection"));
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
