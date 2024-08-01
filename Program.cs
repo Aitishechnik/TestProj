@@ -18,8 +18,10 @@ namespace TestProj
             builder.Services.AddControllersWithViews();
             builder.Services.AddSingleton<ICoinsData, CoinsData>();
             builder.Services.AddSqlServer<ApplicationContext>(config.GetConnectionString("DefaultConnection"));
+            builder.Services.AddMemoryCache();
+            builder.Services.AddOutputCache();
             var app = builder.Build();
-
+            app.UseOutputCache();
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {

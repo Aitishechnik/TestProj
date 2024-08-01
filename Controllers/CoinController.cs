@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using TestProj.Data;
 using TestProj.Models;
 
@@ -13,10 +15,11 @@ namespace TestProj.Controllers
     public class CoinController : Controller
     {
         private readonly ApplicationContext _context;
-
-        public CoinController(ApplicationContext context)
+        private readonly IMemoryCache _cache;
+        public CoinController(ApplicationContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         // GET: Coin
@@ -33,12 +36,23 @@ namespace TestProj.Controllers
                 return NotFound();
             }
 
-            var coin = await _context.Coins
+            /*var coin = await _context.Coins
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (coin == null)
             {
                 return NotFound();
+            }*/
+            Coin coin;
+            if(!_cache.TryGetValue(id, out coin))
+            {
+                coin = await _context.Coins.FirstOrDefaultAsync(c => c.Id == id);
+                if(coin == null)
+                    return NotFound();
+                Console.WriteLine($"Coin {coin.Id} from DB");
+                _cache.Set(id, coin, new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(1)));
             }
+            else
+                Console.WriteLine($"Coin {coin?.Id} from Cache");
 
             return View(coin);
         }
@@ -66,6 +80,7 @@ namespace TestProj.Controllers
         }
 
         // GET: Coin/Edit/5
+        [OutputCache(Duration = 30, VaryByRouteValueNames = new string[]{"id"})]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
